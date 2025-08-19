@@ -1,93 +1,48 @@
-var filePath = "./banList.txt";
-var currentBackground;
-
-async function getCurrentTab(){
-    let queryOptions = { active: true, currentWindow: true };
-    let [tab] = await chrome.tabs.query(queryOptions);
-    return tab.id;
+//Website -> URL, startTime, endTime
+export type Website = {
+    url: string;
+    startTime: Time;
+    endTime: Time;
 }
-function isBackgroundInList(URL){
-    var result = false;
-    getBanList()
-    .then(banList => {
-        for(var i=0; i<banList.length; i++){
-            if(banList[i] == URL){
-                sendSkipMsg();
-                result = true;
-            }
-        }
-    });
-    if(!result){
-        console.log("No skip");
-    }
+export type Time = {epochTime: number}
+
+var url:string = window.location.href;
+
+//onURLCheck -> check URL, compare url database, if exists and time matches, block access
+//onInstall -> add Youtube
+
+//function timeCheck ->
+
+// Get today's date, epoch time of 00:00
+function GetTodayMidnightEpoch():number{
+    var now = new Date();
+    now.setHours(0, 0, 0, 0)
+    return now.getTime();
 }
 
-function getBanList(){
-    // var isInsideList = fetch(filePath)
-    // .then(result => result.text())
-    // .then(text => {
-    //     var lines = text.split('\r\n'); 
-    //     return lines
-    // });
-    // return isInsideList;
-    return new Promise((resolve) => {
-        chrome.storage.local.get('banList', function(data) {
-            console.log("get data: " + data.banList);
-            var banListText = data.banList.split("\r\n");
-            console.log(banListText);
-            resolve(banListText);
-        });
-    })
-    // .then(result => result.text())
-    // .then(text => {
-    //     var lines = text.split('\r\n');
-    //     return lines;
-    // });
-    // return banList;
+// Get current epoch time
+function GetEpochTimeHours(epochTime:number):number{
+    return epochTime - GetTodayMidnightEpoch();
 }
 
-function sendSkipMsg(){
-    console.log("sendSkipMsg()");
-    getCurrentTab().then(response => {
-        chrome.tabs.sendMessage(response, {action : "skip"});
-    });
+// Compare currentTime with the website's startTime and endTime
+function CheckTime(currentTime:Time):boolean{
+    return true;
 }
 
-// chrome.scripting
-//   .registerContentScripts([{
-//     id: "session-script",
-//     js: ["content.js"],
-//     persistAcrossSessions: false,
-//     matches: ["*://youtube.com/*"],
-//     runAt: "document_end",
-//   }])
-//   .then(() => console.log("registration complete"))
-//   .catch((err) => console.warn("unexpected error", err));
+// Check if currentURL matches any URL in the website database
+function URLMatch(currentURL:string):boolean{
+    
 
-// console.log("test");
+    return true;
+}
 
+//Add website on chrome storage
+function AddWebsite(website:Website):void{
 
-// Recieve message from popup.js&contents.js
-// 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if(changeInfo.status === 'complete'){
-        chrome.scripting.executeScript({
-            target: {tabId : tab.id},
-            files: ["./js/content.js"]
-        })
-        chrome.tabs.sendMessage(tabId, { action: "getURL" }, (response) => {
-                if (response) {
-                    currentBackground = response;
-                    console.log("getURL message sent");
-                    console.log(response);
-                    isBackgroundInList(currentBackground);
-                }
-        });
-    }
-  });
+}
 
-  chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({banList : ""}, function(){
-        console.log("Added Successfully");
-    })
-  })
+// Delete website on chrome storage
+function DeleteWebsite(website:Website):void{
+
+}
