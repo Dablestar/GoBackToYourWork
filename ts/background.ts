@@ -48,6 +48,19 @@ function URLMatch(currentURL:string):boolean{
 
 //Add website on declarativeNetRequest Ruleset
 export function AddWebsite(website:Website):void{
+    chrome.storage.local.set({ type:"blockedWebsite", url: website.url, startTime: website.startTime, endTime: website.endTime }, () => {
+        console.log(`Website ${website.url} added to storage`);
+    });
+}
+
+// Delete website on chrome storage and declarativeNetRequest
+export function DeleteWebsite(website:Website):void{
+    chrome.storage.local.remove([website.url], () => {
+        console.log(`Website ${website.url} removed from storage`);
+    });
+}
+
+function EnableBlock(website: Website): void {
     chrome.declarativeNetRequest.getDynamicRules((rules) => {
         let ruleCount = rules.length;
         chrome.declarativeNetRequest.updateDynamicRules({
@@ -56,7 +69,10 @@ export function AddWebsite(website:Website):void{
                 id: ruleCount++,
                 priority: 1,
                 action: {
-                    type: "block"
+                    type: "redirect",
+                    redirect: {
+                        url: "./redirect.html"
+                    }
                 },
                 condition: {
                     urlFilter: website.url,
@@ -66,22 +82,23 @@ export function AddWebsite(website:Website):void{
         ]
     });
     });
-    chrome.storage.local.set({ type:"blockedWebsite", url: website.url, startTime: website.startTime, endTime: website.endTime }, () => {
-        console.log(`Website ${website.url} added to storage`);
-    });
 }
 
-// Delete website on chrome storage
-export function DeleteWebsite(website:Website):void{
-    chrome.storage.local.remove([website.url], () => {
-        console.log(`Website ${website.url} removed from storage`);
+function DisableBlock(website: Website): void {
+    chrome.declarativeNetRequest.getDynamicRules((rules) => {
+        const ruleIdsToRemove = rules
+            .filter(rule => rule.condition.urlFilter === website.url)
+            .map(rule => rule.id);
+        chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: ruleIdsToRemove
+        });
     });
 }
 
 //Test - xvideos, youtube
 chrome.runtime.onInstalled.addListener(() => {
     const testWebsite: Website = {
-        url: "https://www.xvideos.com/",
+        url: "https://www.youtube.com/",
         startTime: { epochTime: Date.now() },
         endTime: { epochTime: Date.now() + 3600 * 1000 }
     };
@@ -100,3 +117,12 @@ chrome.management.onUninstalled.addListener(extensionId => {
         }
     });
 });
+
+chrome.tabs.onUpdated.addListener(() => {
+    if(URLMatch(url) && CheckTime({epochTime: Date.now()})){
+        EnableBlock({url, startTime: {epochTime: Date.now()}, endTime: {epochTime: Date.now() + 3600 * 1000}});
+    }else{
+        DisableBlock({url, startTime: {epochTime: Date.now()}, endTime: {epochTime: Date.now() + 3600 * 1000}});
+    }
+});
+    
