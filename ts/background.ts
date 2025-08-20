@@ -10,7 +10,12 @@ export type Website = {
 export type Time = {epochTime: number}
 
 console.log("Background script running");
-var url:string = self.location.href;
+var url: string = "" 
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+        url = tabs[0].url ?? "<unknown>";
+    }
+});
 
 console.log("Current URL: " + url);
 
@@ -129,7 +134,16 @@ chrome.management.onUninstalled.addListener(extensionId => {
 });
 
 chrome.tabs.onUpdated.addListener(() => {
-    console.log("Tab updated, checking URL...");
+    console.log(`Tab updated, checking URL... ${url}`);
+
+    const testWebsite: Website = {
+        url: "https://www.youtube.com/",
+        startTime: { epochTime: Date.now() },
+        endTime: { epochTime: Date.now() + 3600 * 1000 }
+    };
+    AddWebsite(testWebsite);
+    DeleteWebsite(testWebsite);
+
     if(URLMatch(url)){
         chrome.storage.local.get("type", (blockedWebsites) => {
             // Check if the current URL is in the blocked websites

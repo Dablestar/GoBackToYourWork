@@ -1,5 +1,12 @@
 /// <reference types="chrome"/>
-var url = self.location.href;
+console.log("Background script running");
+var url = "";
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+        url = tabs[0].url ?? "<unknown>";
+    }
+});
+console.log("Current URL: " + url);
 //onURLCheck -> check URL, compare url database, if exists and time matches, block access
 //onInstall -> add Youtube
 // Get today's date, epoch time of 00:00
@@ -14,6 +21,7 @@ function GetEpochTimeHMS(epochTime) {
 }
 // Compare currentTime with the website's startTime and endTime
 function CheckTime(website) {
+    console.log(`CheckTime(${website.url})`);
     var currentEpoch = GetEpochTimeHMS(Date.now());
     var startEpoch = GetEpochTimeHMS(website.startTime.epochTime);
     var endEpoch = GetEpochTimeHMS(website.endTime.epochTime);
@@ -21,6 +29,7 @@ function CheckTime(website) {
 }
 // Check if currentURL matches any URL in the website database
 function URLMatch(currentURL) {
+    console.log(`URLMatch(${currentURL})`);
     chrome.storage.local.get("blockedWebsites", (items) => {
         for (const [key, value] of Object.entries(items)) {
             if (value.url === currentURL) {
@@ -32,17 +41,20 @@ function URLMatch(currentURL) {
 }
 //Add website on declarativeNetRequest Ruleset
 export function AddWebsite(website) {
+    console.log(`AddWebsite(${website.url})`);
     chrome.storage.local.set({ type: "blockedWebsite", url: website.url, startTime: website.startTime, endTime: website.endTime }, () => {
         console.log(`Website ${website.url} added to storage`);
     });
 }
 // Delete website on chrome storage and declarativeNetRequest
 export function DeleteWebsite(website) {
+    console.log(`DeleteWebsite(${website.url})`);
     chrome.storage.local.remove([website.url], () => {
         console.log(`Website ${website.url} removed from storage`);
     });
 }
 function EnableBlock(website) {
+    console.log(`EnableBlock(${website.url})`);
     chrome.declarativeNetRequest.getDynamicRules((rules) => {
         let ruleCount = rules.length;
         chrome.declarativeNetRequest.updateDynamicRules({
@@ -66,6 +78,7 @@ function EnableBlock(website) {
     });
 }
 function DisableBlock(website) {
+    console.log(`DisableBlock(${website.url})`);
     chrome.declarativeNetRequest.getDynamicRules((rules) => {
         const ruleIdsToRemove = rules
             .filter(rule => rule.condition.urlFilter === website.url)
@@ -97,6 +110,14 @@ chrome.management.onUninstalled.addListener(extensionId => {
     });
 });
 chrome.tabs.onUpdated.addListener(() => {
+    console.log(`Tab updated, checking URL... ${url}`);
+    const testWebsite = {
+        url: "https://www.youtube.com/",
+        startTime: { epochTime: Date.now() },
+        endTime: { epochTime: Date.now() + 3600 * 1000 }
+    };
+    AddWebsite(testWebsite);
+    DeleteWebsite(testWebsite);
     if (URLMatch(url)) {
         chrome.storage.local.get("type", (blockedWebsites) => {
             // Check if the current URL is in the blocked websites
