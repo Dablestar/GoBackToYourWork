@@ -9,7 +9,7 @@
   },
   "permissions": ["tabs", "activeTab", "scripting", "nativeMessaging", "notifications", "storage"],
   "background": {
-    "service_worker": "./ts/background.ts",
+    "service_worker": "./dist/background.js",
     "type": "module"
   }
 }
