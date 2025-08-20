@@ -13,18 +13,17 @@ function GetEpochTimeHMS(epochTime) {
     return epochTime - GetTodayMidnightEpoch();
 }
 // Compare currentTime with the website's startTime and endTime
-function CheckTime(currentTime) {
-    var currentEpoch = GetEpochTimeHMS(currentTime.epochTime);
-    var startEpoch = GetEpochTimeHMS(currentTime.epochTime);
-    var endEpoch = GetEpochTimeHMS(currentTime.epochTime);
+function CheckTime(website) {
+    var currentEpoch = GetEpochTimeHMS(Date.now());
+    var startEpoch = GetEpochTimeHMS(website.startTime.epochTime);
+    var endEpoch = GetEpochTimeHMS(website.endTime.epochTime);
     return currentEpoch >= startEpoch && currentEpoch <= endEpoch;
 }
 // Check if currentURL matches any URL in the website database
 function URLMatch(currentURL) {
-    chrome.storage.local.get(null, (items) => {
+    chrome.storage.local.get("blockedWebsites", (items) => {
         for (const [key, value] of Object.entries(items)) {
-            if (key === currentURL) {
-                // If a matching URL is found, check the time
+            if (value.url === currentURL) {
                 return true;
             }
         }
@@ -78,6 +77,7 @@ function DisableBlock(website) {
 }
 //Test - xvideos, youtube
 chrome.runtime.onInstalled.addListener(() => {
+    console.log("Extension installed");
     const testWebsite = {
         url: "https://www.youtube.com/",
         startTime: { epochTime: Date.now() },
@@ -85,9 +85,9 @@ chrome.runtime.onInstalled.addListener(() => {
     };
     AddWebsite(testWebsite);
 });
-// Clear storage and 
+// Clear storage
 chrome.management.onUninstalled.addListener(extensionId => {
-    chrome.storage.local.get((blockedWebsites) => {
+    chrome.storage.local.get("type", (blockedWebsites) => {
         const websitesToDelete = Object.keys(blockedWebsites).filter(key => blockedWebsites[key].type === "blockedWebsite");
         if (websitesToDelete.length > 0) {
             chrome.storage.local.remove(websitesToDelete, () => {
@@ -97,10 +97,18 @@ chrome.management.onUninstalled.addListener(extensionId => {
     });
 });
 chrome.tabs.onUpdated.addListener(() => {
-    if (URLMatch(url) && CheckTime({ epochTime: Date.now() })) {
-        EnableBlock({ url, startTime: { epochTime: Date.now() }, endTime: { epochTime: Date.now() + 3600 * 1000 } });
-    }
-    else {
-        DisableBlock({ url, startTime: { epochTime: Date.now() }, endTime: { epochTime: Date.now() + 3600 * 1000 } });
+    if (URLMatch(url)) {
+        chrome.storage.local.get("type", (blockedWebsites) => {
+            // Check if the current URL is in the blocked websites
+            if (blockedWebsites[url]) {
+                // If it is, check the time
+                if (CheckTime(blockedWebsites[url])) {
+                    EnableBlock(blockedWebsites[url]);
+                }
+                else {
+                    DisableBlock(blockedWebsites[url]);
+                }
+            }
+        });
     }
 });

@@ -7,7 +7,7 @@
     "default_popup": "index.html",
     "default_icon": "./src/icon.png"
   },
-  "permissions": ["tabs", "activeTab", "scripting", "nativeMessaging", "notifications", "storage"],
+  "permissions": ["tabs", "activeTab", "scripting", "nativeMessaging", "storage", "management"],
   "background": {
     "service_worker": "./dist/background.js",
     "type": "module"
