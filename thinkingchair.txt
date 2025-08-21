@@ -1,0 +1,41 @@
+onInstalled
+-> 
+{type: blockedWebsites
+sites: [{website}, {website}, {website}, {website}]} => save this from chrome storage
+
+addWebsite
+->
+get sites from chrome storage
+add sites
+
+deleteWebsite(website)
+->
+get sites from chrome storage
+find website object by website parameter
+get index
+disableBlock()
+delete sites
+
+addWebsite(website)
+->
+get sites from chrome storage
+push website
+
+updateIndex(){
+    get sties from chrome storage, get count
+    get declarativeNetRequest list
+    -> foreach(update all id start from 0)
+}
+
+onUpdated(){
+    get sites from chrome storage
+    if(url exists in the storage){
+        if time range in website matches to current time{
+            enableBlock()
+        }
+    }
+}
+
+getWebsite():Object | undefined {
+    
+}
